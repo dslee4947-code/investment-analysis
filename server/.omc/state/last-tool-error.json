@@ -1,0 +1,7 @@
+{
+  "tool_name": "mcp__Claude_Browser__find",
+  "tool_input_preview": "{\"query\":\"종목명 입력 필드 (직접 추가 폼)\"}",
+  "error": "no read_page tree cached; call read_page first",
+  "timestamp": "2026-08-14T14:35:03.809Z",
+  "retry_count": 1
+}
