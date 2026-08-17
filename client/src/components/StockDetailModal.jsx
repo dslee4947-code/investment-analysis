@@ -41,17 +41,33 @@ function timeAgo(ts) {
   return `${Math.round(hours / 24)}일 전`;
 }
 
+function rsiHeadline(rsi) {
+  if (rsi == null) return { label: "데이터 없음", color: "text-neutral-400" };
+  if (rsi >= 70) return { label: `과매수 구간 (RSI ${rsi})`, color: "text-[#d03b3b]" };
+  if (rsi <= 30) return { label: `과매도 구간 (RSI ${rsi})`, color: "text-[#2a78d6]" };
+  return { label: `중립 구간 (RSI ${rsi})`, color: "text-neutral-900 dark:text-white" };
+}
+
 function analyzeRSI(rsi) {
   if (rsi == null) {
     return "이 종목은 RSI를 계산할 시세 데이터가 없습니다 (국내 종목은 정확한 종목코드를 티커에 등록해야 조회됩니다).";
   }
   if (rsi >= 70) {
-    return `현재 RSI ${rsi}로 70 이상인 "과매수" 구간입니다. 최근 14일간 상승폭이 하락폭보다 훨씬 커서, 단기적으로 상승세가 강했다는 의미입니다. 이 구간에서는 일부 투자자들이 단기 조정 가능성을 참고하기도 하지만, 강한 상승장에서는 RSI가 70 위에서 오래 머무는 경우도 흔합니다.`;
+    return `최근 14일간 상승폭이 하락폭보다 훨씬 커서, 단기적으로 상승세가 강했다는 의미입니다. 이 구간에서는 일부 투자자들이 단기 조정 가능성을 참고하기도 하지만, 강한 상승장에서는 RSI가 70 위에서 오래 머무는 경우도 흔합니다.`;
   }
   if (rsi <= 30) {
-    return `현재 RSI ${rsi}로 30 이하인 "과매도" 구간입니다. 최근 14일간 하락폭이 상승폭보다 훨씬 커서, 단기적으로 하락세가 강했다는 의미입니다. 이 구간에서는 단기 반등 가능성을 참고하는 투자자들이 있지만, 하락 추세가 계속되면 30 아래에서 더 내려가는 경우도 있습니다.`;
+    return `최근 14일간 하락폭이 상승폭보다 훨씬 커서, 단기적으로 하락세가 강했다는 의미입니다. 이 구간에서는 단기 반등 가능성을 참고하는 투자자들이 있지만, 하락 추세가 계속되면 30 아래에서 더 내려가는 경우도 있습니다.`;
   }
-  return `현재 RSI ${rsi}로 30~70 사이 "중립" 구간입니다. 최근 상승폭과 하락폭이 어느 한쪽으로 크게 치우치지 않았다는 뜻으로, 과열이나 침체 신호는 특별히 없는 상태입니다.`;
+  return `최근 상승폭과 하락폭이 어느 한쪽으로 크게 치우치지 않았다는 뜻으로, 과열이나 침체 신호는 특별히 없는 상태입니다.`;
+}
+
+function positionHeadline(metrics) {
+  if (!metrics || metrics.positionPct == null) return { label: "데이터 없음", color: "text-neutral-400" };
+  const pct = metrics.positionPct;
+  if (pct >= 90) return { label: `52주 신고가권 (${pct}%)`, color: "text-[#d03b3b]" };
+  if (pct <= 10) return { label: `52주 바닥권 (${pct}%)`, color: "text-[#2a78d6]" };
+  if (pct >= 50) return { label: `52주 범위 중상단 (${pct}%)`, color: "text-neutral-900 dark:text-white" };
+  return { label: `52주 범위 중하단 (${pct}%)`, color: "text-neutral-900 dark:text-white" };
 }
 
 function analyzePosition(metrics) {
@@ -76,16 +92,22 @@ export default function StockDetailModal({ holding, metrics, fxRate = 0, onClose
   const [news, setNews] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [showExplain, setShowExplain] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     setLoading(true);
     setError("");
+    setElapsed(0);
+    const timer = setInterval(() => setElapsed((s) => s + 1), 1000);
     api
       .get(`/holdings/${holding._id}/news`)
       .then((res) => setNews(res.data))
       .catch((err) => setError(err.response?.data?.message || "뉴스를 가져오지 못했습니다."))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        setLoading(false);
+        clearInterval(timer);
+      });
+    return () => clearInterval(timer);
   }, [holding._id]);
 
   const cost = holding.quantity * holding.avgBuyPrice;
@@ -149,42 +171,41 @@ export default function StockDetailModal({ holding, metrics, fxRate = 0, onClose
           </p>
         )}
 
-        <button
-          onClick={() => setShowExplain((v) => !v)}
-          className="w-full text-center text-xs text-[#2a78d6] hover:underline mb-4"
-        >
-          RSI·52주위치 설명 {showExplain ? "접기" : "보기"}
-        </button>
-
-        {showExplain && (
-          <div className="rounded-xl bg-neutral-50 dark:bg-neutral-800/50 p-3 mb-4 space-y-3 text-xs text-neutral-600 dark:text-neutral-300">
-            <div>
-              <p className="font-semibold text-neutral-900 dark:text-white mb-1">RSI (상대강도지수)</p>
-              <p className="mb-1">
-                최근 14일간의 상승폭과 하락폭을 비교해 0~100 사이 숫자로 나타낸 지표입니다. 상승폭 비중이
-                클수록 100에, 하락폭 비중이 클수록 0에 가까워집니다.
-              </p>
-              <p>{analyzeRSI(metrics?.rsi)}</p>
-            </div>
-            {analyzePosition(metrics) && (
-              <div className="pt-3 border-t border-neutral-200 dark:border-neutral-700">
-                <p className="font-semibold text-neutral-900 dark:text-white mb-1">52주위치</p>
-                <p className="mb-1">
-                  최근 52주(1년)간의 최고가·최저가 범위 안에서 현재가가 어디쯤 있는지를 %로 나타낸
-                  지표입니다.
-                </p>
-                <p>{analyzePosition(metrics)}</p>
-              </div>
-            )}
-            <p className="pt-2 border-t border-neutral-200 dark:border-neutral-700 text-neutral-400">
-              두 지표 모두 과거 가격 움직임만 보는 참고 지표이며, 매수·매도를 판단하는 절대적인 기준이
-              아닙니다.
+        <div className="rounded-xl bg-neutral-50 dark:bg-neutral-800/50 p-3 mb-4 space-y-3 text-xs text-neutral-600 dark:text-neutral-300">
+          <div>
+            <p className={`font-semibold text-sm mb-1 ${rsiHeadline(metrics?.rsi).color}`}>
+              {rsiHeadline(metrics?.rsi).label}
+            </p>
+            <p className="mb-1">{analyzeRSI(metrics?.rsi)}</p>
+            <p className="text-neutral-400">
+              RSI: 최근 14일간의 상승폭과 하락폭을 비교해 0~100 사이 숫자로 나타낸 지표입니다. 상승폭
+              비중이 클수록 100에, 하락폭 비중이 클수록 0에 가까워집니다.
             </p>
           </div>
-        )}
+          {analyzePosition(metrics) && (
+            <div className="pt-3 border-t border-neutral-200 dark:border-neutral-700">
+              <p className={`font-semibold text-sm mb-1 ${positionHeadline(metrics).color}`}>
+                {positionHeadline(metrics).label}
+              </p>
+              <p className="mb-1">{analyzePosition(metrics)}</p>
+              <p className="text-neutral-400">
+                52주위치: 최근 52주(1년)간의 최고가·최저가 범위 안에서 현재가가 어디쯤 있는지를 %로
+                나타낸 지표입니다.
+              </p>
+            </div>
+          )}
+          <p className="pt-2 border-t border-neutral-200 dark:border-neutral-700 text-neutral-400">
+            두 지표 모두 과거 가격 움직임만 보는 참고 지표이며, 매수·매도를 판단하는 절대적인 기준이
+            아닙니다.
+          </p>
+        </div>
 
         <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-2">최근 뉴스</h3>
-        {loading && <p className="text-sm text-neutral-500 dark:text-neutral-400">뉴스를 검색하는 중...</p>}
+        {loading && (
+          <p className="text-sm text-neutral-500 dark:text-neutral-400">
+            뉴스를 검색하는 중... ({elapsed}초, 보통 10~20초 걸려요)
+          </p>
+        )}
         {error && <p className="text-sm text-[#d03b3b]">{error}</p>}
         {!loading && !error && items.length === 0 && news && (
           <p className="text-sm text-neutral-500 dark:text-neutral-400">최근 특별한 뉴스를 찾지 못했습니다.</p>

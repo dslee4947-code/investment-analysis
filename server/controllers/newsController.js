@@ -19,6 +19,7 @@ const SYSTEM_PROMPT = `너는 투자자를 위한 종목 뉴스 요약 도구다
 ]
 
 규칙:
+- 웹검색은 딱 1번만 해라. 검색 결과 안에서 2~4개 뉴스를 골라 요약해라 (추가 검색 금지, 속도가 중요하다)
 - 2~4개 항목만 만들어라
 - 사실 기반으로만 요약해라 (실적, 계약, 인사, 규제, 시장 동향 등)
 - "매수하세요", "매도하세요", "지금이 저평가/고평가입니다" 같은 투자 판단이나 추천 문구는 절대 쓰지 마라
@@ -49,7 +50,7 @@ async function getNews(req, res) {
     model: "claude-sonnet-5",
     max_tokens: 1500,
     system: SYSTEM_PROMPT,
-    tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 3 }],
+    tools: [{ type: "web_search_20250305", name: "web_search", max_uses: 1 }],
     messages: [{ role: "user", content: `"${query}"의 최근 뉴스를 요약해줘.` }],
   });
 
