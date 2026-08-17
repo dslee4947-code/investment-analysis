@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { ACCOUNT_PRESETS } from "../constants";
+import Select from "./Select";
 
 const EMPTY = {
   name: "",
@@ -41,7 +43,6 @@ export default function HoldingForm({ initial, onSubmit, onCancel }) {
 
   const inputClass =
     "w-full rounded-lg border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-white";
-  const selectClass = inputClass;
 
   return (
     <form onSubmit={handleSubmit} className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -58,30 +59,39 @@ export default function HoldingForm({ initial, onSubmit, onCancel }) {
         value={form.ticker}
         onChange={(e) => update("ticker", e.target.value)}
       />
-      <select className={selectClass} value={form.market} onChange={(e) => update("market", e.target.value)}>
-        <option>국내</option>
-        <option>미국</option>
-        <option>암호화폐</option>
-        <option>기타</option>
-      </select>
-      <select className={selectClass} value={form.assetType} onChange={(e) => update("assetType", e.target.value)}>
-        <option>주식</option>
-        <option>ETF</option>
-        <option>현금</option>
-        <option>채권</option>
-        <option>암호화폐</option>
-        <option>기타</option>
-      </select>
-      <select className={selectClass} value={form.currency} onChange={(e) => update("currency", e.target.value)}>
-        <option>KRW</option>
-        <option>USD</option>
-      </select>
+      <Select
+        className="w-full"
+        value={form.market}
+        onChange={(v) => update("market", v)}
+        options={["국내", "미국", "암호화폐", "기타"]}
+        buttonClassName={inputClass}
+      />
+      <Select
+        className="w-full"
+        value={form.assetType}
+        onChange={(v) => update("assetType", v)}
+        options={["주식", "ETF", "현금", "채권", "암호화폐", "기타"]}
+        buttonClassName={inputClass}
+      />
+      <Select
+        className="w-full"
+        value={form.currency}
+        onChange={(v) => update("currency", v)}
+        options={["KRW", "USD"]}
+        buttonClassName={inputClass}
+      />
       <input
         className={inputClass}
         placeholder="계좌/증권사"
+        list="account-presets"
         value={form.account}
         onChange={(e) => update("account", e.target.value)}
       />
+      <datalist id="account-presets">
+        {ACCOUNT_PRESETS.map((a) => (
+          <option key={a} value={a} />
+        ))}
+      </datalist>
       <input
         className={inputClass}
         type="number"

@@ -1,7 +1,10 @@
-export default function InsightCard({ holdings }) {
+export default function InsightCard({ holdings, fxRate = 0 }) {
   if (holdings.length === 0) return null;
 
-  const withValue = holdings.map((h) => ({ ...h, value: h.quantity * h.currentPrice }));
+  const withValue = holdings.map((h) => ({
+    ...h,
+    value: h.currency === "USD" ? h.quantity * h.currentPrice * fxRate : h.quantity * h.currentPrice,
+  }));
   const totalValue = withValue.reduce((s, h) => s + h.value, 0);
   if (totalValue <= 0) return null;
 

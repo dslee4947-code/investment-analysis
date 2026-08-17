@@ -1,5 +1,6 @@
 const Holding = require("../models/Holding");
 const Snapshot = require("../models/Snapshot");
+const { getUsdKrwRate } = require("../utils/fx");
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -7,8 +8,11 @@ function todayKey() {
 
 async function recordSnapshot() {
   const holdings = await Holding.find();
-  const totalValue = holdings.reduce((sum, h) => sum + h.quantity * h.currentPrice, 0);
-  const totalCost = holdings.reduce((sum, h) => sum + h.quantity * h.avgBuyPrice, 0);
+  const fxRate = await getUsdKrwRate();
+  const toKRW = (h, price) => (h.currency === "USD" ? h.quantity * price * fxRate : h.quantity * price);
+
+  const totalValue = holdings.reduce((sum, h) => sum + toKRW(h, h.currentPrice), 0);
+  const totalCost = holdings.reduce((sum, h) => sum + toKRW(h, h.avgBuyPrice), 0);
 
   await Snapshot.findOneAndUpdate(
     { date: todayKey() },
@@ -33,9 +37,28 @@ async function bulkCreateHoldings(req, res) {
   if (items.length === 0) {
     return res.status(400).json({ message: "저장할 항목이 없습니다." });
   }
-  const created = await Holding.insertMany(items);
+
+  const results = [];
+  for (const item of items) {
+    const query = { account: item.account };
+    if (item.ticker) {
+      query.ticker = item.ticker;
+    } else {
+      query.name = item.name;
+    }
+
+    const existing = await Holding.findOne(query);
+    if (existing) {
+      existing.set(item);
+      await existing.save();
+      results.push(existing);
+    } else {
+      results.push(await Holding.create(item));
+    }
+  }
+
   await recordSnapshot();
-  res.status(201).json(created);
+  res.status(201).json(results);
 }
 
 async function updateHolding(req, res) {

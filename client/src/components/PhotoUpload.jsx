@@ -1,8 +1,11 @@
 import { useState } from "react";
 import api from "../api/client";
+import { ACCOUNT_PRESETS } from "../constants";
+import Select from "./Select";
 
 export default function PhotoUpload({ onSave }) {
   const [file, setFile] = useState(null);
+  const [account, setAccount] = useState(ACCOUNT_PRESETS[0]);
   const [items, setItems] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -17,7 +20,7 @@ export default function PhotoUpload({ onSave }) {
       const res = await api.post("/holdings/parse-image", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
-      setItems(res.data.items.map((it) => ({ ...it, include: true })));
+      setItems(res.data.items.map((it) => ({ ...it, account, include: true })));
     } catch (err) {
       setError(err.response?.data?.message || "이미지 분석에 실패했습니다.");
     } finally {
@@ -40,9 +43,15 @@ export default function PhotoUpload({ onSave }) {
   return (
     <div className="space-y-3">
       <p className="text-xs text-neutral-500 dark:text-neutral-400">
-        증권사 앱 스크린샷을 업로드하면 AI가 종목/수량/가격을 읽어 아래에서 확인·수정 후 저장할 수 있습니다.
+        증권사/거래소 앱 스크린샷을 업로드하면 AI가 종목/수량/가격을 읽어 아래에서 확인·수정 후 저장할 수 있습니다.
       </p>
       <div className="flex flex-wrap gap-2 items-center">
+        <Select
+          value={account}
+          onChange={setAccount}
+          options={ACCOUNT_PRESETS}
+          buttonClassName="rounded-lg border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 py-2 text-sm text-neutral-900 dark:text-white"
+        />
         <input
           type="file"
           accept="image/*"

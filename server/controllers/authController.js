@@ -18,7 +18,7 @@ async function login(req, res) {
     return res.status(401).json({ message: "이메일 또는 비밀번호가 올바르지 않습니다." });
   }
 
-  const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "30d" });
+  const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "365d" });
   res.json({ token, email: user.email });
 }
 
