@@ -92,22 +92,15 @@ export default function StockDetailModal({ holding, metrics, fxRate = 0, onClose
   const [news, setNews] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     setLoading(true);
     setError("");
-    setElapsed(0);
-    const timer = setInterval(() => setElapsed((s) => s + 1), 1000);
     api
       .get(`/holdings/${holding._id}/news`)
       .then((res) => setNews(res.data))
-      .catch((err) => setError(err.response?.data?.message || "뉴스를 가져오지 못했습니다."))
-      .finally(() => {
-        setLoading(false);
-        clearInterval(timer);
-      });
-    return () => clearInterval(timer);
+      .catch((err) => setError(err.response?.data?.message || "리포트를 가져오지 못했습니다."))
+      .finally(() => setLoading(false));
   }, [holding._id]);
 
   const cost = holding.quantity * holding.avgBuyPrice;
@@ -201,13 +194,14 @@ export default function StockDetailModal({ holding, metrics, fxRate = 0, onClose
         </div>
 
         <h3 className="text-sm font-semibold text-neutral-900 dark:text-white mb-2">최근 뉴스</h3>
-        {loading && (
+        {loading && <p className="text-sm text-neutral-500 dark:text-neutral-400">불러오는 중...</p>}
+        {error && <p className="text-sm text-[#d03b3b]">{error}</p>}
+        {!loading && !error && news?.pending && (
           <p className="text-sm text-neutral-500 dark:text-neutral-400">
-            뉴스를 검색하는 중... ({elapsed}초, 보통 10~20초 걸려요)
+            아직 생성된 리포트가 없습니다. 매일 아침 자동으로 종목별 뉴스를 분석해 생성해 둡니다.
           </p>
         )}
-        {error && <p className="text-sm text-[#d03b3b]">{error}</p>}
-        {!loading && !error && items.length === 0 && news && (
+        {!loading && !error && !news?.pending && items.length === 0 && news && (
           <p className="text-sm text-neutral-500 dark:text-neutral-400">최근 특별한 뉴스를 찾지 못했습니다.</p>
         )}
         {!loading && !error && items.length > 0 && (
@@ -231,10 +225,10 @@ export default function StockDetailModal({ holding, metrics, fxRate = 0, onClose
             ))}
           </ul>
         )}
-        {!loading && !error && news && (
+        {!loading && !error && news && !news.pending && (
           <p className="mt-3 text-xs text-neutral-400">
-{news.cached ? `${timeAgo(news.fetchedAt)} 자동 생성된 리포트` : `방금 생성됨`} · ▲긍정적 ▼부정적
-            —중립 · AI 웹검색 요약이며 투자 조언이 아닙니다. 뉴스 클릭 시 원문으로 이동합니다.
+            {timeAgo(news.fetchedAt)} 자동 생성된 리포트{news.stale ? " (오늘자 리포트 생성 전 · 최근 리포트)" : ""} ·
+            ▲긍정적 ▼부정적 —중립 · AI 웹검색 요약이며 투자 조언이 아닙니다. 뉴스 클릭 시 원문으로 이동합니다.
           </p>
         )}
       </div>
