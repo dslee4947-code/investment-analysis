@@ -1,6 +1,7 @@
 const Holding = require("../models/Holding");
 const Snapshot = require("../models/Snapshot");
 const { getUsdKrwRate } = require("../utils/fx");
+const { syncLivePrices } = require("../utils/livePrice");
 
 function todayKey() {
   return new Date().toISOString().slice(0, 10); // YYYY-MM-DD
@@ -23,6 +24,12 @@ async function recordSnapshot() {
 
 async function listHoldings(req, res) {
   const holdings = await Holding.find().sort({ createdAt: -1 });
+
+  const { updatedCount } = await syncLivePrices(holdings);
+  if (updatedCount > 0) {
+    await recordSnapshot();
+  }
+
   res.json(holdings);
 }
 
