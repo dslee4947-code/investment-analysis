@@ -4,16 +4,13 @@ const connectDB = require("./config/db");
 const Holding = require("./models/Holding");
 const NewsReport = require("./models/NewsReport");
 const { generateNewsItems, holdingKey } = require("./utils/newsGenerator");
-
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
+const { todayKeyKST } = require("./utils/kstDate");
 
 async function run() {
   await connectDB();
 
   const holdings = await Holding.find();
-  const date = todayKey();
+  const date = todayKeyKST();
 
   // 계좌 중복 제거 (같은 종목이 여러 계좌에 있으면 한 번만 검색)
   const uniqueByKey = new Map();

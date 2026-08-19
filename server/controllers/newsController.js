@@ -1,10 +1,7 @@
 const Holding = require("../models/Holding");
 const NewsReport = require("../models/NewsReport");
 const { holdingKey } = require("../utils/newsGenerator");
-
-function todayKey() {
-  return new Date().toISOString().slice(0, 10);
-}
+const { todayKeyKST } = require("../utils/kstDate");
 
 // 종목 클릭 시 그 자리에서 AI를 호출하지 않는다.
 // 매일 아침 dailyNewsJob이 미리 생성해 둔 리포트만 조회해서 즉시 보여준다.
@@ -15,7 +12,7 @@ async function getNews(req, res) {
   }
 
   const key = holdingKey(holding);
-  const date = todayKey();
+  const date = todayKeyKST();
 
   const today = await NewsReport.findOne({ key, date });
   if (today) {
