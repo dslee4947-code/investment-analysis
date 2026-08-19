@@ -233,8 +233,8 @@ export default function StockDetailModal({ holding, metrics, fxRate = 0, onClose
         )}
         {!loading && !error && news && (
           <p className="mt-3 text-xs text-neutral-400">
-            {timeAgo(news.fetchedAt)} 갱신{news.cached && " (캐시됨)"} · ▲긍정적 ▼부정적 —중립 · AI
-            웹검색 요약이며 투자 조언이 아닙니다. 뉴스 클릭 시 원문으로 이동합니다.
+{news.cached ? `${timeAgo(news.fetchedAt)} 자동 생성된 리포트` : `방금 생성됨`} · ▲긍정적 ▼부정적
+            —중립 · AI 웹검색 요약이며 투자 조언이 아닙니다. 뉴스 클릭 시 원문으로 이동합니다.
           </p>
         )}
       </div>

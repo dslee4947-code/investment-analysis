@@ -7,7 +7,8 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "seed": "node seedUser.js"
+    "seed": "node seedUser.js",
+    "daily-news": "node dailyNewsJob.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
